@@ -1,26 +1,25 @@
 package com.syncinator.kodi.login.util;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.stream.Stream;
 
-import javax.servlet.http.HttpServletRequest;
-
 public class Utils {
-	public static String getRemoteAddress(HttpServletRequest request) {
+	public static String getRemoteAddress(final HttpServletRequest request) {
 		String remote = request.getHeader("x-forwarded-for");
 		if (remote == null) {
 			remote = request.getRemoteAddr();
 		}
 		return remote;
 	}
-	public static String getSourceId(HttpServletRequest request) {
-		String ip = getRemoteAddress(request);
-		int sourceid = 0;
+	public static String getSourceId(final HttpServletRequest request) {
+		final String ip = getRemoteAddress(request);
 		try {
-			sourceid = Stream.of(ip.contains(".")?ip.split("\\."):ip.split(":")).mapToInt(n -> Integer.parseInt(n)).sum();
+			return String.valueOf(Stream.of(ip.contains(".")?ip.split("\\."):ip.split(":"))
+					.mapToInt(Integer::parseInt).sum());
 		} catch(Exception e) {
-			sourceid = -1;
+			return "-1";
 		}
-		return String.valueOf(sourceid);
 	}
 	
 }

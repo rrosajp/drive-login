@@ -1,10 +1,6 @@
 package com.syncinator.kodi.login.oauth.provider;
 
-import java.net.URI;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
-
+import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
@@ -16,6 +12,11 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
+
+import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
 
 public abstract class Provider {
 	public static final String NAME_PREFIX = "provider.";
@@ -30,23 +31,19 @@ public abstract class Provider {
 	protected RestTemplate restTemplate = new RestTemplate();
 	
 	public abstract String authorize(String pin);
-	public abstract Map<String,Object> tokens(String grantType, String value) throws Exception;
+	public abstract Map<String,Object> tokens(String grantType, String value);
 	
 	@Value("${callback.url}")
 	protected String callbackUrl;
-	
-	public String getAuthorizeUrl(String name, String pin) {
-		return getAuthorizeUrl(name, pin, null);
-	}
-	
-	public String getAuthorizeUrl(String name, String pin, Map<String,String> extraParams) {
-		UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(getEnv(name, ENV_URL_AUTHORIZE))
+
+	public String getAuthorizeUrl(final String name, final String pin, final Map<String,String> extraParams) {
+		final UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(getEnv(name, ENV_URL_AUTHORIZE))
 				.queryParam("client_id", getEnv(name, ENV_CLIENT_ID))
 				.queryParam("redirect_uri", callbackUrl)
 				.queryParam("state", pin)
 				.queryParam("response_type", "code");
 		if (extraParams != null && !extraParams.isEmpty()) {
-			for (Entry<String,String> e : extraParams.entrySet()) {
+			for (final Entry<String,String> e : extraParams.entrySet()) {
 				builder.queryParam(e.getKey(), e.getValue());
 			}
 		}
@@ -54,11 +51,14 @@ public abstract class Provider {
 		
 	}
 	
-	protected Map<String,Object> getTokens(String name, String grantType, String value) throws Exception {
-		MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+	protected Map<String,Object> getTokens(
+			final String name,
+			final String grantType,
+			final String value) {
+		final MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
 		params.add("client_id", getEnv(name, ENV_CLIENT_ID));
 		params.add("redirect_uri", callbackUrl);
-		String secret = getEnv(name, ENV_CLIENT_SECRET);
+		final String secret = getEnv(name, ENV_CLIENT_SECRET);
 		if (secret != null && !secret.isEmpty()) {
 			params.add("client_secret", secret);
 		}
@@ -66,23 +66,25 @@ public abstract class Provider {
 		params.add(grantType.replace("authorization_", ""), value);
 		return oauthPost(getEnv(name, ENV_URL_TOKEN), params);
 	}
-	
-	protected Map<String,Object> oauthPost(String url, MultiValueMap<String, String> params) throws Exception {
-		HttpHeaders headers = new HttpHeaders();
+
+	@SneakyThrows
+	protected Map<String,Object> oauthPost(final String url, final MultiValueMap<String, String> params) {
+		final HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-		ResponseEntity<HashMap<String,Object>> responseEntity = restTemplate.exchange(
+		final ResponseEntity<HashMap<String,Object>> responseEntity = restTemplate.exchange(
 			new URI(url),
 			HttpMethod.POST,
-			new HttpEntity<MultiValueMap<String, String>>(params, headers),
-			new ParameterizedTypeReference<HashMap<String, Object>>() {}
+                new HttpEntity<>(params, headers),
+                new ParameterizedTypeReference<>() {
+                }
 		);
 		return responseEntity.getBody();
 	}
 	
-	protected String getEnv(String provider, String var) {
+	protected String getEnv(final String provider, final String var) {
 		return System.getenv(ENV_PREFIX + getEnvProvider(provider.toUpperCase()) + var);
 	}
-	protected String getEnvProvider(String provider) {
+	protected String getEnvProvider(final String provider) {
 		return provider.replace('.', '_');
 	}
 }
